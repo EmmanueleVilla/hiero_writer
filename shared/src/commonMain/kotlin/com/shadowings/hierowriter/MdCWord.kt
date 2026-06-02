@@ -45,7 +45,7 @@ fun MdCWordPreview() {
 }
 
 @Composable
-fun MdCWord(word: String, rtl: Boolean, cart: Boolean, size: Dp = 64.dp) {
+fun MdCWord(word: String, rtl: Boolean, cart: Boolean, size: Dp = 64.dp, tint: Color = hieroglyphTint) {
     val columns = if (!rtl) {
         word.split("-")
     } else {
@@ -56,7 +56,7 @@ fun MdCWord(word: String, rtl: Boolean, cart: Boolean, size: Dp = 64.dp) {
         modifier = Modifier
             .border(
                 width = if (cart) 2.dp else 0.dp,
-                color = if (cart) neutralBlack else Color.Transparent,
+                color = if (cart) tint else Color.Transparent,
                 shape = RoundedCornerShape(
                     if (!rtl) 16.dp else 0.dp,
                     if (rtl) 16.dp else 0.dp,
@@ -70,7 +70,7 @@ fun MdCWord(word: String, rtl: Boolean, cart: Boolean, size: Dp = 64.dp) {
         Layout(
             content = {
                 columns.forEach { columnWord ->
-                    MdCColumn(columnWord = columnWord, rtl = rtl, size = size)
+                    MdCColumn(columnWord = columnWord, rtl = rtl, size = size, tint = tint)
                 }
             }
         ) { measurables, constraints ->
@@ -120,7 +120,7 @@ fun MdCWord(word: String, rtl: Boolean, cart: Boolean, size: Dp = 64.dp) {
 }
 
 @Composable
-private fun MdCColumn(columnWord: String, rtl: Boolean, size: Dp, modifier: Modifier = Modifier) {
+private fun MdCColumn(columnWord: String, rtl: Boolean, size: Dp, tint: Color, modifier: Modifier = Modifier) {
     val rows = columnWord.split(":")
     Column(
         modifier = modifier.fillMaxHeight(),
@@ -150,7 +150,7 @@ private fun MdCColumn(columnWord: String, rtl: Boolean, size: Dp, modifier: Modi
                             painter = painterResource(res),
                             contentScale = ContentScale.Fit,
                             contentDescription = "",
-                            colorFilter = ColorFilter.tint(hieroglyphTint)
+                            colorFilter = ColorFilter.tint(tint)
                         )
                     }
                 }

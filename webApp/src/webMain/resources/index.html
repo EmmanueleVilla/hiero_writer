@@ -5,6 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HieroWriter</title>
     <link type="text/css" rel="stylesheet" href="styles.css">
+    <script type="application/javascript">
+        (function() {
+            const originalGetContext = HTMLCanvasElement.prototype.getContext;
+            HTMLCanvasElement.prototype.getContext = function(type, attributes) {
+                if (type === 'webgl' || type === 'webgl2') {
+                    attributes = attributes || {};
+                    attributes.preserveDrawingBuffer = true;
+                }
+                return originalGetContext.call(this, type, attributes);
+            };
+        })();
+    </script>
 </head>
 <body style="text-align: center; align-content: center">
     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 50 50" role="presentation">

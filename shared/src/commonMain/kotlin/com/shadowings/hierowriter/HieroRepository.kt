@@ -1079,8 +1079,12 @@ import org.jetbrains.compose.resources.DrawableResource
 
 object HieroRepository {
 
-    fun resFromGardinerCode(code: String): DrawableResource? {
-        return resToGardinerCode[code]
+    private val caseInsensitiveMap: Map<String, org.jetbrains.compose.resources.DrawableResource> by lazy {
+        resToGardinerCode.entries.associate { it.key.lowercase() to it.value }
+    }
+
+    fun resFromGardinerCode(code: String): org.jetbrains.compose.resources.DrawableResource? {
+        return caseInsensitiveMap[code.lowercase()]
     }
 
     val resToGardinerCode = mapOf(
