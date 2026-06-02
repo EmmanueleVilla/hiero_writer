@@ -78,8 +78,26 @@ package com.shadowings.hierowriter
         
         ctx.drawImage(canvas, sx, sy, sw, sh, 0, 0, sw, sh);
         
+        // Upscale image by 4x to output high resolution crisp PNG
+        const scaleFactor = 4;
+        const targetW = sw * scaleFactor;
+        const targetH = sh * scaleFactor;
+        
+        const scaleCanvas = document.createElement('canvas');
+        scaleCanvas.width = targetW;
+        scaleCanvas.height = targetH;
+        const scaleCtx = scaleCanvas.getContext('2d');
+        if (!scaleCtx) {
+            console.error("Could not get 2D context for scaling canvas");
+            return;
+        }
+        
+        scaleCtx.imageSmoothingEnabled = true;
+        scaleCtx.imageSmoothingQuality = 'high';
+        scaleCtx.drawImage(tempCanvas, 0, 0, sw, sh, 0, 0, targetW, targetH);
+        
         try {
-            const imgData = ctx.getImageData(0, 0, sw, sh);
+            const imgData = scaleCtx.getImageData(0, 0, targetW, targetH);
             const data = imgData.data;
             for (let i = 0; i < data.length; i += 4) {
                 const r = data[i];
@@ -88,9 +106,12 @@ package com.shadowings.hierowriter
                 
                 // Estimate opacity of the black glyph based on background color FFF1D6 (255, 241, 214)
                 let alpha = 1.0 - ((r / 255) + (g / 241) + (b / 214)) / 3.0;
-                if (alpha < 0.02) {
+                
+                // Sigmoidal sharpening function to get extremely crisp vector-like edges at 4x resolution
+                alpha = 1.0 / (1.0 + Math.exp(-24 * (alpha - 0.5)));
+                if (alpha < 0.05) {
                     alpha = 0;
-                } else if (alpha > 0.98) {
+                } else if (alpha > 0.95) {
                     alpha = 1;
                 }
                 
@@ -100,12 +121,12 @@ package com.shadowings.hierowriter
                 data[i + 2] = 0;
                 data[i + 3] = Math.round(alpha * 255);
             }
-            ctx.putImageData(imgData, 0, 0);
+            scaleCtx.putImageData(imgData, 0, 0);
         } catch (e) {
-            console.warn("Failed to process transparency:", e);
+            console.warn("Failed to process transparency and scaling:", e);
         }
         
-        const dataUrl = tempCanvas.toDataURL('image/png');
+        const dataUrl = scaleCanvas.toDataURL('image/png');
         const link = document.createElement('a');
         link.download = fileName;
         link.href = dataUrl;
@@ -132,4 +153,11 @@ private external fun copyToClipboardJs(text: String)
 
 actual fun copyToClipboard(text: String) {
     copyToClipboardJs(text)
+}
+
+@JsFun("(url) => { window.open(url, '_blank'); }")
+private external fun openUrlJs(url: String)
+
+actual fun openUrl(url: String) {
+    openUrlJs(url)
 }
