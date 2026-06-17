@@ -28,8 +28,6 @@ import androidx.compose.ui.layout.LayoutModifier
 import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.layout.MeasureResult
 import androidx.compose.ui.layout.MeasureScope
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
@@ -59,7 +57,7 @@ fun MdCWord(
     rtl: Boolean,
     cart: Boolean,
     size: Dp = 64.dp,
-    testTag: String? = null,
+    tint: Color = hieroglyphTint
 ) {
     val count = word.split("-").size
     val columns = if (!rtl) {
@@ -72,22 +70,16 @@ fun MdCWord(
         val firstHalf = orderedColumns.subList(0, count / 2).joinToString("-")
         val secondHalf = orderedColumns.subList(count / 2, count).joinToString("-")
         Column(
-            modifier = if (testTag.isNullOrBlank()) Modifier else Modifier.semantics {
-                this.testTag = testTag
-            },
             horizontalAlignment = if (rtl) Alignment.End else Alignment.Start,
             verticalArrangement = Arrangement.Center
         ) {
-            MdCWord(firstHalf, rtl, cart, size)
-            MdCWord(secondHalf, rtl, cart, size)
+            MdCWord(firstHalf, rtl, cart, size, tint)
+            MdCWord(secondHalf, rtl, cart, size, tint)
         }
         return
     }
 
     Row(
-        modifier = if (testTag.isNullOrBlank()) Modifier else Modifier.semantics {
-            this.testTag = testTag
-        },
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (cart && rtl) {
@@ -97,7 +89,7 @@ fun MdCWord(
             modifier = Modifier
                 .border(
                     width = if (cart) 2.dp else 0.dp,
-                    color = if (cart) hieroglyphTint else Color.Transparent,
+                    color = if (cart) tint else Color.Transparent,
                     shape = RoundedCornerShape(
                         if (cart) 24.dp else 0.dp,
                         if (cart) 24.dp else 0.dp,
@@ -111,7 +103,7 @@ fun MdCWord(
             Layout(
                 content = {
                     columns.forEach { columnWord ->
-                        MdCColumn(columnWord = columnWord, rtl = rtl, size = size)
+                        MdCColumn(columnWord = columnWord, rtl = rtl, size = size, tint = tint)
                     }
                 }
             ) { measurables, constraints ->
@@ -167,7 +159,13 @@ fun MdCWord(
 }
 
 @Composable
-private fun MdCColumn(columnWord: String, rtl: Boolean, size: Dp, modifier: Modifier = Modifier) {
+private fun MdCColumn(
+    columnWord: String,
+    rtl: Boolean,
+    size: Dp,
+    modifier: Modifier = Modifier,
+    tint: Color = hieroglyphTint
+) {
     val rows = columnWord.split(":")
     Column(
         modifier = modifier.fillMaxHeight(),
@@ -197,7 +195,7 @@ private fun MdCColumn(columnWord: String, rtl: Boolean, size: Dp, modifier: Modi
                             painter = painterResource(res),
                             contentScale = ContentScale.Fit,
                             contentDescription = "",
-                            colorFilter = ColorFilter.tint(hieroglyphTint)
+                            colorFilter = ColorFilter.tint(tint)
                         )
                     }
                 }
