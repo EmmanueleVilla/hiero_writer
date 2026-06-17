@@ -45,82 +45,120 @@ fun MdCWordPreview() {
 }
 
 @Composable
-fun MdCWord(word: String, rtl: Boolean, cart: Boolean, size: Dp = 64.dp, tint: Color = hieroglyphTint) {
+fun MdCWord(
+    word: String,
+    rtl: Boolean,
+    cart: Boolean,
+    size: Dp = 64.dp,
+    testTag: String? = null,
+) {
+    val count = word.split("-").size
     val columns = if (!rtl) {
         word.split("-")
     } else {
         word.split("-").reversed()
     }
+    if (count > 12) {
+        val orderedColumns = if (!rtl) columns else columns.reversed()
+        val firstHalf = orderedColumns.subList(0, count / 2).joinToString("-")
+        val secondHalf = orderedColumns.subList(count / 2, count).joinToString("-")
+        Column(
+            modifier = if (testTag.isNullOrBlank()) Modifier else Modifier.semantics {
+                this.testTag = testTag
+            },
+            horizontalAlignment = if (rtl) Alignment.End else Alignment.Start,
+            verticalArrangement = Arrangement.Center
+        ) {
+            MdCWord(firstHalf, rtl, cart, size)
+            MdCWord(secondHalf, rtl, cart, size)
+        }
+        return
+    }
 
-    Box(
-        modifier = Modifier
-            .border(
-                width = if (cart) 2.dp else 0.dp,
-                color = if (cart) tint else Color.Transparent,
-                shape = RoundedCornerShape(
-                    if (!rtl) 16.dp else 0.dp,
-                    if (rtl) 16.dp else 0.dp,
-                    if (rtl) 16.dp else 0.dp,
-                    if (!rtl) 16.dp else 0.dp
-                )
-            )
-            .padding(4.dp),
-        contentAlignment = Alignment.Center
+    Row(
+        modifier = if (testTag.isNullOrBlank()) Modifier else Modifier.semantics {
+            this.testTag = testTag
+        },
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Layout(
-            content = {
-                columns.forEach { columnWord ->
-                    MdCColumn(columnWord = columnWord, rtl = rtl, size = size, tint = tint)
-                }
-            }
-        ) { measurables, constraints ->
-            val defaultHeight = size.roundToPx()
-
-            // 1. Calculate natural widths at default height using maxIntrinsicWidth (without measuring)
-            val naturalWidths = measurables.map { measurable ->
-                measurable.maxIntrinsicWidth(defaultHeight)
-            }
-            val totalWidth = naturalWidths.sum()
-            val maxW = constraints.maxWidth
-
-            println("totalWidth: $totalWidth, maxW: $maxW, measurables: ${measurables.size}")
-
-            var finalHeight = defaultHeight
-
-            // If the total width exceeds the available width, scale down the height
-            if (maxW in 1..<totalWidth) {
-                var scaleFactor = maxW.toFloat() / totalWidth
-                // reduce the scale factor a bit to ensure it fits within the paddings
-                scaleFactor *= 0.9f
-                finalHeight = (defaultHeight * scaleFactor).toInt().coerceAtLeast(1)
-            }
-
-            // 3. Measure all measurables EXACTLY ONCE with the final height
-            val placeables = measurables.map { measurable ->
-                measurable.measure(
-                    Constraints(
-                        minHeight = finalHeight,
-                        maxHeight = finalHeight
+        if (cart && rtl) {
+            Box(modifier = Modifier.width(3.dp).height(size + 16.dp).background(Color.Black))
+        }
+        Box(
+            modifier = Modifier
+                .border(
+                    width = if (cart) 2.dp else 0.dp,
+                    color = if (cart) hieroglyphTint else Color.Transparent,
+                    shape = RoundedCornerShape(
+                        if (cart) 24.dp else 0.dp,
+                        if (cart) 24.dp else 0.dp,
+                        if (cart) 24.dp else 0.dp,
+                        if (cart) 24.dp else 0.dp
                     )
                 )
-            }
+                .padding(8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Layout(
+                content = {
+                    columns.forEach { columnWord ->
+                        MdCColumn(columnWord = columnWord, rtl = rtl, size = size)
+                    }
+                }
+            ) { measurables, constraints ->
+                val defaultHeight = size.roundToPx()
 
-            val actualTotalWidth = placeables.sumOf { it.width }
+                // 1. Calculate natural widths at default height using maxIntrinsicWidth (without measuring)
+                val naturalWidths = measurables.map { measurable ->
+                    measurable.maxIntrinsicWidth(defaultHeight)
+                }
+                val totalWidth = naturalWidths.sum()
+                val maxW = constraints.maxWidth
 
-            // 4. Layout placement
-            layout(width = actualTotalWidth, height = finalHeight) {
-                var xPosition = 0
-                placeables.forEach { placeable ->
-                    placeable.placeRelative(x = xPosition, y = 0)
-                    xPosition += placeable.width
+                println("MDC_WORD: totalWidth: $totalWidth, maxW: $maxW, measurables: ${measurables.size}")
+
+                var finalHeight = defaultHeight
+
+                // If the total width exceeds the available width, scale down the height
+                if (maxW in 1..<totalWidth) {
+                    val scaleFactor = maxW.toFloat() / totalWidth
+                    finalHeight = (defaultHeight * scaleFactor).toInt().coerceAtLeast(1)
+                }
+
+                println("MDC_WORD: finalHeight: $finalHeight with scaleFactor: ${finalHeight.toFloat() / defaultHeight} and expected totalWidth: ${(totalWidth * (finalHeight.toFloat() / defaultHeight)).toInt()}")
+
+                // 3. Measure all measurables EXACTLY ONCE with the final height
+                val placeables = measurables.map { measurable ->
+                    measurable.measure(
+                        Constraints(
+                            minHeight = finalHeight,
+                            maxHeight = finalHeight
+                        )
+                    )
+                }
+
+                val actualTotalWidth = placeables.sumOf { it.width }
+
+                println("MDC_WORD: actualTotalWidth: $actualTotalWidth, finalHeight: $finalHeight")
+
+                // 4. Layout placement
+                layout(width = actualTotalWidth, height = finalHeight) {
+                    var xPosition = 0
+                    placeables.forEach { placeable ->
+                        placeable.placeRelative(x = xPosition, y = 0)
+                        xPosition += placeable.width
+                    }
                 }
             }
+        }
+        if (cart && !rtl) {
+            Box(modifier = Modifier.width(2.dp).height(size).background(Color.Black))
         }
     }
 }
 
 @Composable
-private fun MdCColumn(columnWord: String, rtl: Boolean, size: Dp, tint: Color, modifier: Modifier = Modifier) {
+private fun MdCColumn(columnWord: String, rtl: Boolean, size: Dp, modifier: Modifier = Modifier) {
     val rows = columnWord.split(":")
     Column(
         modifier = modifier.fillMaxHeight(),
@@ -142,7 +180,7 @@ private fun MdCColumn(columnWord: String, rtl: Boolean, size: Dp, tint: Color, m
                         Image(
                             modifier = Modifier
                                 .fillMaxHeight()
-                                .widthIn(max = size / cells.size)
+                                .maxCellWidth(aspectRatio = rows.size.toFloat() / cells.size.toFloat())
                                 .padding(2.dp)
                                 .graphicsLayer {
                                     scaleX = if (!rtl) 1f else -1f
@@ -150,11 +188,57 @@ private fun MdCColumn(columnWord: String, rtl: Boolean, size: Dp, tint: Color, m
                             painter = painterResource(res),
                             contentScale = ContentScale.Fit,
                             contentDescription = "",
-                            colorFilter = ColorFilter.tint(tint)
+                            colorFilter = ColorFilter.tint(hieroglyphTint)
                         )
                     }
                 }
             }
         }
     }
+}
+
+private fun Modifier.maxCellWidth(aspectRatio: Float): Modifier = this.then(
+    MaxCellWidthModifier(aspectRatio)
+)
+
+private class MaxCellWidthModifier(val aspectRatio: Float) : LayoutModifier {
+    override fun MeasureScope.measure(
+        measurable: Measurable,
+        constraints: Constraints
+    ): MeasureResult {
+        val height = constraints.maxHeight
+        val maxW = (height * aspectRatio).toInt().coerceAtLeast(1)
+        val placeable = measurable.measure(
+            constraints.copy(maxWidth = constraints.maxWidth.coerceAtMost(maxW))
+        )
+        return layout(placeable.width, placeable.height) {
+            placeable.placeRelative(0, 0)
+        }
+    }
+
+    override fun IntrinsicMeasureScope.maxIntrinsicWidth(
+        measurable: IntrinsicMeasurable,
+        height: Int
+    ): Int {
+        val maxW = (height * aspectRatio).toInt().coerceAtLeast(1)
+        return measurable.maxIntrinsicWidth(height).coerceAtMost(maxW)
+    }
+
+    override fun IntrinsicMeasureScope.minIntrinsicWidth(
+        measurable: IntrinsicMeasurable,
+        height: Int
+    ): Int {
+        val maxW = (height * aspectRatio).toInt().coerceAtLeast(1)
+        return measurable.minIntrinsicWidth(height).coerceAtMost(maxW)
+    }
+
+    override fun IntrinsicMeasureScope.maxIntrinsicHeight(
+        measurable: IntrinsicMeasurable,
+        width: Int
+    ): Int = measurable.maxIntrinsicHeight(width)
+
+    override fun IntrinsicMeasureScope.minIntrinsicHeight(
+        measurable: IntrinsicMeasurable,
+        width: Int
+    ): Int = measurable.minIntrinsicHeight(width)
 }
